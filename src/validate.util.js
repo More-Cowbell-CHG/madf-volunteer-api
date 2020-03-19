@@ -19,7 +19,7 @@ exports.requiredProperties = (obj, keys) => {
 exports.onlyTheseProperties = (obj, keys) => {
   const unknown = Object.keys(obj).filter(key => !keys.includes(key));
 
-  if (unknown) {
+  if (unknown.length) {
     error(`Unrecognized properties: ${unknown.join(', ')}`);
   }
 };
@@ -27,11 +27,11 @@ exports.onlyTheseProperties = (obj, keys) => {
 exports.array = (obj, key, validValues) => {
   const val = obj[key];
 
-  if (undefinedOrNull(value)) {
+  if (undefinedOrNull(val)) {
     return;
   }
 
-  if (!Array.isArray(value)) {
+  if (!Array.isArray(val)) {
     error(`The '${key}' property must be an array, not this: ${val}`);
   }
 

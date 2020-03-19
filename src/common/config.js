@@ -102,5 +102,5 @@ module.exports = defaultObj => {
     writeDefaults(defaultObj);
   }
 
-  global.common.config = { get, toObject };
+  return { get, toObject };
 };
