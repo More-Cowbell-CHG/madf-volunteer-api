@@ -11,8 +11,13 @@ require('./common')({
 
 // Shuts down the server
 const terminate = async () => {
-  await global.common.express.stop();
-  global.db.close();
+  if (global.common && global.common.express) {
+    await global.common.express.stop();
+  }
+
+  if (global.db) {
+    global.db.close();
+  }
 };
 
 process.on('SIGINT', () => {
