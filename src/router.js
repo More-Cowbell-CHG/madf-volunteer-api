@@ -1,5 +1,9 @@
+const passport = require('./passport-init');
+const AuthController = require('./routes/auth.controller');
+
 module.exports = express => {
   const router = express.Router();
-  router.get('/hello', require('./routes/hello.controller'));
+  router.post('/login', AuthController.authenticate);
+  router.get('/hello', passport.authenticate('jwt', { session: false }), require('./routes/hello.controller'));
   return router;
 };

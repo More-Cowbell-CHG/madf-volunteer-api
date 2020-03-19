@@ -4,13 +4,15 @@ if (typeof process.env.npm_package_version === 'undefined') {
 }
 
 require('./common')({
-  // default config options go here
+  mongo: {
+    dbName: 'madf-volunteer'
+  }
 });
 
 // Shuts down the server
 const terminate = async () => {
   await global.common.express.stop();
-  // perform other shutdown operations here
+  global.db.close();
 };
 
 process.on('SIGINT', () => {
@@ -23,6 +25,9 @@ process.on('unhandledRejection', reason => {
 });
 
 // Start the server
-global.common.express.start({
-  routers: require('./router')
+require('./db/db')(global.common.config.toObject('mongo')).then(db => {
+  global.db = db;
+  global.common.express.start({
+    routers: require('./router')
+  });
 });
