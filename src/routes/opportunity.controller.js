@@ -9,8 +9,6 @@ const OPPORTUNITIES = [
 ];
 
 exports.list = async (req, res) => {
-  const user = await global.db.user.findByEmail(req.user.email);
-  console.log(user);
   res.send({ opportunities: OPPORTUNITIES });
 };
 
