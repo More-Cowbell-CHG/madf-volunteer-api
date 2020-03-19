@@ -86,7 +86,7 @@ const errorHandler = (err, req, res, next) => {
 };
 
 exports.defaultConfig = {
-  port: 8080
+  port: process.env.PORT || 8080
 };
 
 exports.init = expressConfig => {
