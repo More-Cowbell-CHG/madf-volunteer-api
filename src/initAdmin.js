@@ -1,3 +1,4 @@
+// Command-line script for creating the initial application user in MongoDB.
 const prompts = require('prompts');
 
 const questions = [

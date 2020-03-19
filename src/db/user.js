@@ -6,6 +6,10 @@ const ROLES = [ 'volunteer', 'champion', 'admin' ];
 
 module.exports = db => {
   const collection = db.collection('user');
+
+  // Retrieves the user with the given email address.
+  const findByEmail = email => collection.findOne({ email: { $eq: email } });
+
   return {
     // Creates a new user
     create: async user => {
@@ -17,7 +21,7 @@ module.exports = db => {
       user.salt = generateSalt();
       user.passwordHash = hashPassword(user.password, user.salt);
       delete user.password;
-      await coll.insertOne(user);
+      await collection.insertOne(user);
       sanitizeUser(user);
       return user;
     },
@@ -42,12 +46,17 @@ module.exports = db => {
     },
 
     // Retrieves the user with the given email address.
-    findByEmail: async email => sanitizeUser(await findByEmail(email))
+    findByEmail: async email => {
+      const user = await findByEmail(email);
+
+      if (user) {
+        sanitizeUser(user);
+      }
+
+      return user;
+    }
   };
 };
-
-// Retrieves the user with the given email address.
-const findByEmail = email => coll.findOne({ email: { $eq: email } });
 
 // Deletes secret properties from the given user object.
 const sanitizeUser = user => {
