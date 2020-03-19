@@ -18,7 +18,7 @@ module.exports = appDefaults => {
   modules.forEach(module => {
     commonDefaults[module.name] = module.defaultConfig;
   });
-  config({ ...commonDefaults, ...appDefaults });
+  cs.config = config({ ...commonDefaults, ...appDefaults });
 
   // Initialize other modules
   modules.forEach(module => {

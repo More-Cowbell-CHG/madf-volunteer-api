@@ -10,6 +10,22 @@ module.exports = db => {
   // Retrieves the user with the given email address.
   const findByEmail = email => collection.findOne({ email: { $eq: email } });
 
+  // Throws an Error if the given user object is invalid.
+  const validateUser = async user => {
+    Validate.requiredProperties(user, REQUIRED_PROPERTIES);
+    Validate.onlyTheseProperties(user, REQUIRED_PROPERTIES);
+    Validate.string(user, 'email');
+    // TODO Validate that it's a valid email address
+    Validate.string(user, 'name');
+    Validate.array(user, 'roles', ROLES);
+    Validate.string(user, 'password');
+    // TODO Validate password strength
+
+    if (await findByEmail(user.email)) {
+      error400(`User already exists: ${user.email}`);
+    }
+  };
+
   return {
     // Creates a new user
     create: async user => {
@@ -62,22 +78,6 @@ module.exports = db => {
 const sanitizeUser = user => {
   delete user.salt;
   delete user.passwordHash;
-};
-
-// Throws an Error if the given user object is invalid.
-const validateUser = async user => {
-  Validate.requiredProperties(user, REQUIRED_PROPERTIES);
-  Validate.onlyTheseProperties(user, REQUIRED_PROPERTIES);
-  Validate.string(user, 'email');
-  // TODO Validate that it's a valid email address
-  Validate.string(user, 'name');
-  Validate.array(user, 'roles', ROLES);
-  Validate.string(user, 'password');
-  // TODO Validate password strength
-
-  if (await findByEmail(user.email)) {
-    error400(`User already exists: ${user.email}`);
-  }
 };
 
 // Generates a new random hex string that can be used as a salt value.
