@@ -26,6 +26,7 @@ module.exports = class AnsiConsoleTransport extends TransportStream {
 
   log(info, callback) {
     const level = info.level;
+    const originalMsg = info.message;
     let msg = `[${level.toUpperCase()}] ${info.message}`;
     const meta = { ...info };
     delete meta.level;
@@ -34,6 +35,10 @@ module.exports = class AnsiConsoleTransport extends TransportStream {
     delete meta[MESSAGE];
     const sendToErr = level === 'error' || level === 'warn';
     console[sendToErr ? 'error' : 'log'](colorize(level, msg));
+
+    if (originalMsg instanceof Error) {
+      console.error(originalMsg);
+    }
 
     if (meta && Object.keys(meta).length) {
       console.dir(meta);
