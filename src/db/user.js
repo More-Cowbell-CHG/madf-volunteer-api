@@ -37,7 +37,8 @@ module.exports = db => {
         return null;
       }
 
-      return sanitizeUser(user);
+      sanitizeUser(user);
+      return user;
     },
 
     // Retrieves the user with the given email address.
