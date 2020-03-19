@@ -5,7 +5,7 @@ const REQUIRED_PROPERTIES = [ 'email', 'name', 'roles', 'password' ];
 const ROLES = [ 'volunteer', 'champion', 'admin' ];
 
 module.exports = db => {
-  const coll = db.collection('user');
+  const collection = db.collection('user');
   return {
     // Creates a new user
     create: async user => {
@@ -18,6 +18,7 @@ module.exports = db => {
       user.passwordHash = hashPassword(user.password, user.salt);
       delete user.password;
       await coll.insertOne(user);
+      sanitizeUser(user);
       return user;
     },
 
