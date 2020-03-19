@@ -4,7 +4,7 @@ module.exports = config => {
   return new Promise((resolve, reject) => {
     const username = encodeURIComponent(config.username);
     const password = encodeURIComponent(config.password);
-    const url = `mongodb+srv://${username}:${password}@${config.host}/${config.dbName}`;
+    const url = `mongodb${config.srv ? '+srv' : ''}://${username}:${password}@${config.host}/${config.dbName}`;
     const client = new MongoClient(url, {
       useUnifiedTopology: true,
       useNewUrlParser: true
