@@ -18,3 +18,11 @@ exports.sendError = (res, msg = 'An unexpected error occurred', error, statusCod
 exports.notImplemented = (req, res, next) => {
   res.status(501).send({ error: 'Not implemented '});
 };
+
+exports.forbidden = (req, res, next) => {
+  res.status(403).send();
+};
+
+exports.noContent = (req, res, next) => {
+  res.status(204).send();
+};

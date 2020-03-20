@@ -10,7 +10,7 @@ describe('OfficeController', () => {
         expect(body.offices).toHaveLength(10);
         body.offices.forEach(office => {
           let exp = expect(office);
-          exp.toHaveProperty('code')
+          exp.toHaveProperty('code');
           exp.toHaveProperty('name');
           expect(typeof office.code).toEqual('string');
           expect(typeof office.name).toEqual('string');
