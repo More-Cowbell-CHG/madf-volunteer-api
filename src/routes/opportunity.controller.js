@@ -4,7 +4,8 @@ exports.list = async (req, res) => {
   if (!req.user.roles.includes('admin') && !req.user.roles.includes('champion') && req.query.status) {
     delete req.query.status;
   }
-  res.send({opportunities: global.db.opportunity.list()});
+  let opportunities = await global.db.opportunity.list();
+  res.send({opportunities: opportunities});
 };
 
 exports.getById = async (req, res) => {
@@ -18,7 +19,7 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
   let opportunity = {...req.body};
   try {
-    opportunity = await global.db.opportunity.create(opportunity);
+    opportunity = await global.db.opportunity.create(opportunity, req.user._id);
   } catch (err) {
     return res.status(err.statusCode).send({error: err.message});
   }
@@ -29,7 +30,7 @@ exports.update = async (req, res) => {
   let opportunity = {...req.body, _id: req.params.id};
 
   try {
-    opportunity = await global.db.opportunity.update(opportunity);
+    opportunity = await global.db.opportunity.update(opportunity, req.user._id);
   } catch (err) {
     return res.status(400).send({error: err.message});
   }
@@ -37,10 +38,20 @@ exports.update = async (req, res) => {
   res.send(opportunity);
 };
 
-exports.setState = (req, res) => {
-  const id = req.params.id;
+exports.setState = async (req, res) => {
+  if (!req.user.roles.includes('admin')) {
+    return Http.forbidden(req, res);
+  }
 
-  res.send({endpoint: 'setState', success: true});
+  const id = req.params.id;
+  const status = req.body.status;
+  try {
+    await global.db.opportunity.setStatus(id, status, req.user._id);
+  } catch (err) {
+    return res.status(400).send({error: err.message});
+  }
+
+  return Http.noContent(req, res);
 };
 
 exports.delete = async (req, res) => {
