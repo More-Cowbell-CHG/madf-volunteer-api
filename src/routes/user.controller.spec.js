@@ -1,17 +1,33 @@
-// Tests for the signup controller
+// Tests for the user controller
 const controller = require('./user.controller');
-const DEFAULT_CONFIG = {};
-const config = require('../common/config')(DEFAULT_CONFIG).toObject('mongo');
-const email = 'darthvader@testemail.com';
+const users = require('../users.data');
+const mockCreateUser = {
+  name: 'Darth Vader',
+  email: 'darthvader@fake.com',
+  password: 'password123'
+};
+const mockUser = {
+  _id: '5e751194fdf8dde491c2b271',
+  roles: ['volunteer'],
+  ...mockCreateUser
+};
+const mockUpdateUser = {
+  ...mockUser,
+  name: 'Anakin Skywalker'
+};
 
 describe('UserController', () => {
 
-  beforeAll(async () => {
-    global.db = await require('../db/db')(config);
-  });
-
-  afterAll(() => {
-    global.db.close();
+  beforeAll(() => {
+    global.db = {
+      user: {
+        list: jest.fn(() => users),
+        create: jest.fn(() => mockUser),
+        update: jest.fn(() => mockUpdateUser),
+        delete: jest.fn(),
+        findByEmail: jest.fn(() => mockUser)
+      }
+    };
   });
 
   describe('UserController.list', () => {
@@ -23,7 +39,7 @@ describe('UserController', () => {
       };
       const res = {
         send: body => {
-          expect(body.users).toBeTruthy();
+          expect(body.users).toHaveLength(2);
           done();
         }
       };
@@ -34,17 +50,15 @@ describe('UserController', () => {
   describe('UserController.create', () => {
     it('should create user', async done => {
       const req = {
-        body: {
-          name: 'Darth Vader',
-          email: 'darthvader@testemail.com',
-          password: 'password123'
-        }
+        body: mockCreateUser
       };
       const res = {
         send: body => {
-          expect(body._id).toBeTruthy();
-          expect(body.name).toBe('Darth Vader');
-          expect(body.email).toBe(email);
+          expect(body._id).toBe(mockUser._id);
+          expect(body.name).toBe(mockUser.name);
+          expect(body.email).toBe(mockUser.email);
+          expect(body.roles).toHaveLength(1);
+          expect(body.roles[0]).toBe('volunteer');
           done();
         },
         status: code => res
@@ -55,7 +69,7 @@ describe('UserController', () => {
 
   describe('UserController.update', () => {
     it('should update user', async done => {
-      let user = await global.db.user.findByEmail(email);
+      let user = await global.db.user.findByEmail(mockUser.email);
       const req = {
         params: {
           id: user._id
@@ -78,7 +92,7 @@ describe('UserController', () => {
 
   describe('UserController.delete', () => {
     it('should delete user', async done => {
-      let user = await global.db.user.findByEmail(email);
+      let user = await global.db.user.findByEmail(mockUser.email);
       const req = {
         params: {
           id: user._id
