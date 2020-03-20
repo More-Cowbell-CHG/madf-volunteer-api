@@ -2,53 +2,23 @@ const Validate = require('../validate.util');
 const MongoUtil = require('./util');
 
 const STATUSES = [ 'pending', 'open', 'closed', 'archived' ];
+const STATUS_TRANSITIONS = {
+  'pending': [ 'open' ],
+  'open': [ 'closed', 'archived' ],
+  'closed': [ 'archived' ]
+};
 const OFFICE_CODES = require('../offices.data').map(office => office.code);
 
 const REQUIRED_PROPERTIES_CREATE = [
   'title', 'description', 'office', 'location', 'deadline', 'slots'
 ];
-const ALLOWED_PROPERTIES_CREATE = [
-  ...REQUIRED_PROPERTIES_CREATE, 'waiver'
-];
+const ALLOWED_PROPERTIES_CREATE = [ ...REQUIRED_PROPERTIES_CREATE, 'waiver' ];
+const REQUIRED_PROPERTIES_UPDATE = [ '_id' ];
+const ALLOWED_PROPERTIES_UPDATE = [ '_id', ...ALLOWED_PROPERTIES_CREATE ];
 const SLOT_REQUIRED_PROPERTIES = [ 'start', 'limit' ];
+const SLOT_ALLOWED_PROPERTIES = [ ...SLOT_REQUIRED_PROPERTIES, 'volunteers' ]
+const VOLUNTEER_PROPERTIES = [ 'id', 'name' ];
 const FIND_PROJECTION = { title: 1, office: 1, location: 1, status: 1, slots: 1 };
-
-/*
-{
-  "_id": ObjectID,
-  "created": {
-    "user": ObjectID,
-    "time": <long>
-  },
-  "lastModified": {
-    "user": ObjectID,
-    "time": <long>
-  },
-  "title": "Donate Blood",
-  "description": "Visit the vampires",
-  "office": "SLC",
-  "location": {
-    "name": "CHG Headquarters",
-    "address": "123 Blood Drive, City, ST 87245"
-  },
-  "status": "open",
-  "deadline": <long>,
-  "waiver": "You have to agree to this",
-  "slots": [
-    {
-      "start": <long>,
-      "limit": 5,
-      "volunteers": [
-        {
-          "id": ObjectID,
-          "name": "Robert J. Walker"
-        },
-        ...
-      ]
-    }
-  ]
-}
-*/
 
 module.exports = db => {
   const collection = db.collection('opportunity');
@@ -65,7 +35,14 @@ module.exports = db => {
     //   - start:number
     //   - limit:number
     create: async (obj, userId) => {
-      validateOpportunity(obj);
+      obj = { ...obj };
+      validateOpportunityCreate(obj);
+
+      if (typeof userId !== 'string') {
+        Validate.error400('Must specify user ID');
+        // TODO Make sure it's an actual champion?
+      }
+
       const now = Date.now();
       obj.created = { user: userId, time: now };
       obj.lastModified = { user: userId, time: now };
@@ -73,9 +50,10 @@ module.exports = db => {
       obj.slots.forEach(slot => {
         slot.volunteers = [];
       });
-      await collection.insertOne(obj);
-      return MongoUtil.convertObjectIds(obj);
+      collection.insertOne(obj);
+      return api.get(obj._id);
     },
+
     // Lists opportunities. The filter argument can contain the following properties (all optional):
     // q: A query string
     // office: An office code
@@ -93,8 +71,90 @@ module.exports = db => {
       );
     },
 
+    // Returns the opportunity with the given ID.
+    get: id => MongoUtil.findById(collection, id),
+
+    // Updates an opportunity.
+    update: async (update, userId) => {
+      validateOpportunityUpdate(update);
+
+      if (typeof userId !== 'string') {
+        Validate.error400('Must specify user ID');
+        // TODO Make sure it's an actual champion?
+      }
+
+      const id = MongoUtil.id(update._id);
+      delete update._id;
+      const q = { _id: { $eq: id }};
+      const opportunity = await collection.findOne(q);
+
+      if (opportunity === null) {
+        Validate.error400(`Opportunity does not exist: ${id.toString()}`);
+      }
+
+      update.lastModified = { user: userId, time: Date.now() };
+      await collection.updateOne(q, { $set: update });
+      return api.get(id);
+    },
+
+    // Changes the status of an opportunity.
+    setStatus: async (id, status, userId) => {
+      if (typeof id !== 'string') {
+        Validate.error400(`Opportunity ID must be a string; this isn't: ${id}`);
+      }
+
+      if (typeof userId !== 'string') {
+        Validate.error400('Must specify user ID');
+        // TODO Make sure it's an actual champion/admin?
+      }
+
+      if (!STATUSES.includes(status)) {
+        Validate.error400(`Invalid status: ${status}`);
+      }
+
+      const q = { _id: { $eq: MongoUtil.id(id) }};
+      const opportunity = await collection.findOne(q);
+
+      if (opportunity === null) {
+        Validate.error400(`Opportunity does not exist: ${id.toString()}`);
+      }
+
+      const legalTransitions = STATUS_TRANSITIONS[opportunity.status];
+
+      if (!legalTransitions.includes(status)) {
+        Validate.error400(`Illegal status transition: ${opportunity.status} => ${status}`);
+      }
+
+      await collection.updateOne(q, { $set: {
+        status,
+        lastModified: { user: userId, time: Date.now() }
+      }});
+    },
+
     // Deletes the given user record, or the record with the given ID
-    delete: objOrId => MongoUtil.deleteOne(collection, objOrId)
+    delete: async objOrId => {
+      const id = typeof objOrId === 'object' && objOrId !== null ? objOrId._id : objOrId;
+
+      if (typeof id !== 'string') {
+        Validate.error400(`Opportunity ID must be a string; this isn't: ${id}`);
+        return;
+      }
+
+      const q = { _id: { $eq: MongoUtil.id(id) }};
+      const opportunity = await collection.findOne(q);
+
+      if (opportunity === null) {
+        Validate.error400(`Opportunity does not exist: ${id.toString()}`);
+        return;
+      }
+
+      if (opportunity.status !== 'pending') {
+        Validate.error400('Cannot delete an opportunity that is no longer pending; archive it instead');
+        return;
+      }
+
+      MongoUtil.deleteOne(collection, objOrId)
+    }
   };
   return api;
 };
@@ -167,16 +227,30 @@ const searchStringToRegExp = string => {
   return new RegExp(string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
 };
 
-const validateOpportunity = opportunity => {
+const validateOpportunityCreate = opportunity => {
   Validate.requiredProperties(opportunity, REQUIRED_PROPERTIES_CREATE);
   Validate.onlyTheseProperties(opportunity, ALLOWED_PROPERTIES_CREATE);
+  validateOpportunityCommon(opportunity);
+};
+
+const validateOpportunityUpdate = opportunity => {
+  Validate.requiredProperties(opportunity, REQUIRED_PROPERTIES_UPDATE);
+  Validate.onlyTheseProperties(opportunity, ALLOWED_PROPERTIES_UPDATE);
+  validateOpportunityCommon(opportunity);
+};
+
+const validateOpportunityCommon = opportunity => {
   Validate.string(opportunity, 'title');
   Validate.string(opportunity, 'description');
   Validate.string(opportunity, 'office', OFFICE_CODES);
   Validate.object(opportunity, 'location');
-  Validate.string(opportunity.location, 'name');
-  Validate.string(opportunity.location, 'address');
-  Validate.number(opportunity.deadline);
+
+  if ('location' in opportunity) {
+    Validate.string(opportunity.location, 'name');
+    Validate.string(opportunity.location, 'address');
+  }
+
+  Validate.number(opportunity, 'deadline');
   // TODO Require deadline to be in the future
   Validate.string(opportunity, 'waiver');
   Validate.array(opportunity, 'slots');
@@ -189,16 +263,30 @@ const validateOpportunity = opportunity => {
 
 const validateSlot = slot => {
   Validate.requiredProperties(slot, SLOT_REQUIRED_PROPERTIES);
-  Validate.onlyTheseProperties(opportunity, SLOT_REQUIRED_PROPERTIES);
-  Validate.number(opportunity, 'start');
+  Validate.onlyTheseProperties(slot, SLOT_ALLOWED_PROPERTIES);
+  Validate.number(slot, 'start');
   // TODO Slot starts must be in the future
   // TODO Slot starts must be after opportunity deadline?
-  Validate.number(opportunity, limit, 1);
+  Validate.number(slot, 'limit', 1);
+  Validate.array(slot, 'volunteers');
+  const volunteers = slot.volunteers;
+
+  if (volunteers) {
+    volunteers.forEach(validateVolunteer);
+  }
+};
+
+const validateVolunteer = volunteer => {
+  Validate.requiredProperties(volunteer, VOLUNTEER_PROPERTIES);
+  Validate.onlyTheseProperties(volunteer, VOLUNTEER_PROPERTIES);
+  Validate.string(volunteer, 'id');
+  // TODO Validate that ID belongs to real volunteer?
+  Validate.string(volunteer, 'name');
 };
 
 // Returns the number of volunteers still needed for an opportunity.
 const computeNeededVolunteers = slots => {
   return slots.reduce((sum, slot) => {
-    sum += slot.limit - slot.volunteers.length;
+    return sum + Math.max(slot.limit - slot.volunteers.length, 0);
   }, 0);
 }

@@ -20,6 +20,7 @@ module.exports = db => {
   const api = {
     // Creates a new user
     create: async user => {
+      user = { ...user };
       validateUser(user);
 
       if (await findByEmail(user.email, false)) {
@@ -29,8 +30,8 @@ module.exports = db => {
       user.salt = generateSalt();
       user.passwordHash = hashPassword(user.password, user.salt);
       delete user.password;
-      await collection.insertOne(user);
-      return MongoUtil.convertObjectIds(sanitize(user));
+      user = collection.insertOne(user);
+      return api.get(obj._id);
     },
 
     // Returns the user with the given email address if their password is correct. Returns null if
