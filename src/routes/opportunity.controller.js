@@ -63,6 +63,10 @@ exports.setState = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
+  if (!req.user.roles.includes('champion')) {
+    return Http.forbidden(req, res);
+  }
+
   try {
     await global.db.opportunity.delete(req.params.id);
   } catch (err) {

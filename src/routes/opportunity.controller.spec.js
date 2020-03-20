@@ -174,13 +174,24 @@ describe('OpportunityController', () => {
 
   describe('OpportunityController.delete', () => {
     it('should delete', done => {
+      const req = {
+        body: {
+          status: 'open'
+        },
+        params: {
+          id: '5e754136c0d97544056f4e37'
+        },
+        user: {
+          roles: ['admin']
+        }
+      };
       const res = {
         send: body => {
           done();
         },
         status: code => res
       };
-      controller.delete(null, res);
+      controller.delete(req, res);
     });
   });
 });
