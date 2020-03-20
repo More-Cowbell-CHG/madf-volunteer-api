@@ -74,12 +74,13 @@ module.exports = db => {
     // Returns the opportunity with the given ID.
     get: id => MongoUtil.findById(collection, id),
 
-    // Updates an opportunity.
+    // Updates an opportunity. Note: userId should be omitted if the update
+    // comes from a volunteer.
     update: async (update, userId) => {
       validateOpportunityUpdate(update);
 
-      if (typeof userId !== 'string') {
-        Validate.error400('Must specify user ID');
+      if (typeof userId !== 'undefined' && typeof userId !== 'string') {
+        Validate.error400('User ID must be a string');
         // TODO Make sure it's an actual champion?
       }
 
@@ -92,7 +93,10 @@ module.exports = db => {
         Validate.error400(`Opportunity does not exist: ${id.toString()}`);
       }
 
-      update.lastModified = { user: userId, time: Date.now() };
+      if (userId) {
+        update.lastModified = { user: userId, time: Date.now() };
+      }
+
       await collection.updateOne(q, { $set: update });
       return api.get(id);
     },

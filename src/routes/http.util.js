@@ -20,9 +20,13 @@ exports.notImplemented = (req, res, next) => {
 };
 
 exports.forbidden = (req, res, next) => {
-  res.status(403).send();
+  res.status(403).send({ error: 'Forbidden' });
 };
 
 exports.noContent = (req, res, next) => {
   res.status(204).send();
+};
+
+exports.notFound = (req, res, next) => {
+  res.status(404).send({ error: 'Not found' });
 };
