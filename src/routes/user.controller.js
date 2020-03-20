@@ -8,6 +8,10 @@ exports.list = async (req, res) => {
   res.send({users: await global.db.user.list()});
 };
 
+exports.get = async (req, res) => {
+  res.send(await global.db.user.get(req.params.id));
+};
+
 exports.create = async (req, res) => {
   let user = {...req.body};
   user.roles = ['volunteer'];
