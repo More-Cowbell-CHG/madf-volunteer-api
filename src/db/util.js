@@ -57,7 +57,7 @@ exports.deleteOne = async (collection, objOrId) => {
 };
 
 // Converts a string ID to a Mongo ObjectID.
-exports.id = id => new Mongo.ObjectID(id);
+exports.id = id => typeof id === 'string' ? new Mongo.ObjectID(id) : id;
 
 // Retrieves a document by ID.
 exports.findById = (collection, id) => exports.findOne(collection, { _id: exports.id(id) });
