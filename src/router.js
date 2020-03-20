@@ -18,7 +18,7 @@ module.exports = express => {
   router.post('/opportunity/:id/signup', auth(), SignupController.create);
   router.delete('/opportunity/:id/signup/:start', auth(), SignupController.delete);
   router.get('/user', auth(), UserController.list);
-  router.post('/user', auth(), UserController.create);
+  router.post('/user', UserController.create);
   router.put('/user/:id', auth(), UserController.update);
   router.delete('/user/:id', auth(), UserController.delete);
   return router;
