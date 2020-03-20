@@ -111,7 +111,8 @@ describe('OpportunityController', () => {
       const req = {
         body: createOpp,
         user: {
-          _id: '5e73cec83fdfdb3527b2a7ee'
+          _id: '5e73cec83fdfdb3527b2a7ee',
+          roles: ['champion']
         }
       };
       const res = {

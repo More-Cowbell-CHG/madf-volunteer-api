@@ -17,6 +17,10 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+  if (!req.user.roles.includes('champion')) {
+    return Http.forbidden(req, res);
+  }
+
   let opportunity = {...req.body};
   try {
     opportunity = await global.db.opportunity.create(opportunity, req.user._id);
