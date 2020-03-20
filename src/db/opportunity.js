@@ -57,11 +57,11 @@ module.exports = db => {
     // Lists opportunities. The filter argument can contain the following properties (all optional):
     // q: A query string
     // office: An office code
-    // status: A status type (defaults to 'open'; explicitly pass 'null' to get all types)
+    // status: A status type
     list: (filter = {}) => {
       return MongoUtil.find(
         collection,
-        buildQuery({ status: 'open', ...filter }),
+        buildQuery(filter),
         FIND_PROJECTION,
         opportunity => {
           opportunity.neededVolunteers = computeNeededVolunteers(opportunity.slots);
