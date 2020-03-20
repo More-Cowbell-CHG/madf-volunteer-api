@@ -49,9 +49,9 @@ describe('OpportunityController', () => {
   beforeAll(() => {
     global.db = {
       opportunity: {
-        create: jest.fn(),
+        create: jest.fn(() => createOpp),
         list: jest.fn(() => opportunities),
-        get: jest.fn(),
+        get: jest.fn(() => opportunities[0]),
         update: jest.fn(() => updateOpp),
         setStatus: jest.fn(),
         delete: jest.fn()
@@ -90,23 +90,33 @@ describe('OpportunityController', () => {
 
   describe('OpportunityController.getById', () => {
     it('should get by id', done => {
+      const req = {
+        params: {
+          id: '5e75399fdbfd482e16c73126'
+        }
+      };
       const res = {
         send: body => {
+          expect(body.title).toBe('cool opportunity');
           done();
         },
         status: code => res
       };
-      controller.getById(null, res);
+      controller.getById(req, res);
     });
   });
 
   describe('OpportunityController.create', () => {
     it('should create', done => {
       const req = {
-        body: createOpp
+        body: createOpp,
+        user: {
+          _id: '5e73cec83fdfdb3527b2a7ee'
+        }
       };
       const res = {
         send: body => {
+          expect(body.title).toBe('cool opportunity');
           done();
         },
         status: code => res
@@ -119,13 +129,16 @@ describe('OpportunityController', () => {
     it('should update', done => {
       const req = {
         body: updateOpp,
+        user: {
+          _id: '5e73cec83fdfdb3527b2a7ee'
+        },
         params: {
           id: '5e754136c0d97544056f4e37'
         }
       };
       const res = {
         send: body => {
-          // expect(body.title).toBe('updated title');
+          expect(body.title).toBe('updated title');
           done();
         },
         status: code => res
