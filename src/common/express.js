@@ -4,6 +4,7 @@
 // JWT decoding, error handling, and endpoint access logging when APM is disabled.
 const express = require('express');
 const canary = require('./canary.controller');
+const cors = require('cors');
 
 let config, server;
 
@@ -22,6 +23,9 @@ const start = ({ routers, serviceChecks, envKeys }) => {
   return new Promise(resolve => {
     let app = express();
     app.use(express.json());
+
+    app.use(cors());
+
     app.use(logAccess);
     const canaryEndpoint = canary(serviceChecks, envKeys);
     app.get('/', canaryEndpoint);
