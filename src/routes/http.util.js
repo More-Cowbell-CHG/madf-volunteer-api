@@ -11,7 +11,7 @@ exports.sendError = (res, msg = 'An unexpected error occurred', error, statusCod
     msg = (msg ? msg + ': ' : '') + error.message;
   }
 
-  res.status(status).send({ msg });
+  res.status(statusCode).send({ msg });
 };
 
 // Sends an HTTP 501 "Not implemented" error to the client.

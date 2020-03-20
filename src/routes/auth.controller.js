@@ -6,19 +6,18 @@ const httpUtil = require('./http.util');
 exports.authenticate = async (req, res, next) => {
   passport.authenticate('login', { session: false }, (error, user, info) => {
     if (error) {
-      httpUtil.sendError(error);
-      throwError(res, 'An error occurred while trying to authenticate', error);
+      httpUtil.sendError(res, 'An error occurred while trying to authenticate', error);
       return;
     }
 
     if (!user) {
-      throwError(res, 'Authentication failed', null, 403);
+      httpUtil.sendError(res, 'Authentication failed', null, 403);
       return;
     }
 
     req.login(user, { session: false }, err => {
       if (err) {
-        throwError(res, 'An error occurred while trying to authenticate', err);
+        httpUtil.sendError(res, 'An error occurred while trying to authenticate', err);
         return;
       }
 

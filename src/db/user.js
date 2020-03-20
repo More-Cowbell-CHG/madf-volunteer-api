@@ -72,6 +72,7 @@ module.exports = db => {
 
       if ('password' in update) {
         update.passwordHash = hashPassword(update.password, user.salt);
+        delete update.password;
       }
 
       await collection.updateOne(q, { $set: update });
