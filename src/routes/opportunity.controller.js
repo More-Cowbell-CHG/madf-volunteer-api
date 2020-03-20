@@ -7,8 +7,12 @@ exports.list = async (req, res) => {
   res.send({opportunities: global.db.opportunity.list()});
 };
 
-exports.getById = (req, res) => {
-  res.send({endpoint: 'geById', success: true});
+exports.getById = async (req, res) => {
+  try {
+    res.send(await global.db.opportunity.get(req.params.id));
+  } catch (err) {
+    res.status(400).send({error: err.message});
+  }
 };
 
 exports.create = async (req, res) => {
@@ -21,11 +25,21 @@ exports.create = async (req, res) => {
   res.send(opportunity);
 };
 
-exports.update = (req, res) => {
-  res.send({endpoint: 'update', success: true});
+exports.update = async (req, res) => {
+  let opportunity = {...req.body, _id: req.params.id};
+
+  try {
+    opportunity = await global.db.opportunity.update(opportunity);
+  } catch (err) {
+    return res.status(400).send({error: err.message});
+  }
+
+  res.send(opportunity);
 };
 
 exports.setState = (req, res) => {
+  const id = req.params.id;
+
   res.send({endpoint: 'setState', success: true});
 };
 

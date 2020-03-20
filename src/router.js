@@ -12,7 +12,7 @@ module.exports = express => {
   router.get('/opportunity', auth(), OpportunityController.list);
   router.get('/opportunity/:id', auth(), OpportunityController.getById);
   router.post('/opportunity', auth(), OpportunityController.create);
-  router.put('/opportunity', auth(), OpportunityController.update);
+  router.put('/opportunity/:id', auth(), OpportunityController.update);
   router.put('/opportunity/:id/set-state', auth(), OpportunityController.setState);
   router.delete('/opportunity/:id', auth(), OpportunityController.delete);
   router.post('/opportunity/:id/signup', auth(), SignupController.create);
