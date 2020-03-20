@@ -27,6 +27,10 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
+  if (!req.user.roles.includes('champion')) {
+    return Http.forbidden(req, res);
+  }
+
   let opportunity = {...req.body, _id: req.params.id};
 
   try {

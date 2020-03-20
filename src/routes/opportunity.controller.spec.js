@@ -130,7 +130,8 @@ describe('OpportunityController', () => {
       const req = {
         body: updateOpp,
         user: {
-          _id: '5e73cec83fdfdb3527b2a7ee'
+          _id: '5e73cec83fdfdb3527b2a7ee',
+          roles: ['champion']
         },
         params: {
           id: '5e754136c0d97544056f4e37'
