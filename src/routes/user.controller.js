@@ -38,6 +38,10 @@ exports.update = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  await global.db.user.delete(req.params.id);
+  try {
+    await global.db.user.delete(req.params.id);
+  } catch (err) {
+    return res.status(400).send({error: err.message});
+  }
   return Http.noContent(req, res);
 };

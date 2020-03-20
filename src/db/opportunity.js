@@ -201,4 +201,4 @@ const computeNeededVolunteers = slots => {
   return slots.reduce((sum, slot) => {
     sum += slot.limit - slot.volunteers.length;
   }, 0);
-}
+};
