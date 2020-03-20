@@ -108,11 +108,7 @@ const hashPassword = (password, salt) => crypto.pbkdf2Sync(password, salt, 1000,
 const validateUser = user => {
   Validate.requiredProperties(user, REQUIRED_PROPERTIES_CREATE);
   Validate.onlyTheseProperties(user, REQUIRED_PROPERTIES_CREATE);
-
-  if ('_id' in user) {
-    Validate.string(user, '_id');
-  }
-
+  Validate.string(user, '_id');
   Validate.string(user, 'name');
   Validate.string(user, 'email');
   // TODO Validate that it's a valid email address
@@ -138,7 +134,7 @@ const validateUpdate = update => {
   Validate.string(update, 'password');
 };
 
-// Removes an secret fields from a user object.
+// Removes any secret fields from a user object.
 const sanitize = user => {
   if (user === null) {
     return null;
