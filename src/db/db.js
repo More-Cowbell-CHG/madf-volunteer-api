@@ -23,7 +23,7 @@ module.exports = config => {
 
 const buildApi = (client, db) => {
   const api = {
-    //opportunity: require('./opportunity')(db),
+    opportunity: require('./opportunity')(db),
     user: require('./user')(db),
     close: async () => {
       await client.close();
