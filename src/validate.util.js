@@ -20,7 +20,7 @@ exports.onlyTheseProperties = (obj, keys) => {
   const unknown = Object.keys(obj).filter(key => !keys.includes(key));
 
   if (unknown.length) {
-    error(`Unrecognized properties: ${unknown.join(', ')}`);
+    error(`Properties not allowed: ${unknown.join(', ')}`);
   }
 };
 
@@ -46,6 +46,10 @@ exports.array = (obj, key, validValues) => {
 
 exports.string = (obj, key, validValues) => {
   const val = obj[key];
+
+  if (undefinedOrNull(val)) {
+    return;
+  }
 
   if (typeof val !== 'string') {
     error(`The '${key}' property must be a string, not this: ${val}`);
