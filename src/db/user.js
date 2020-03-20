@@ -30,8 +30,8 @@ module.exports = db => {
       user.salt = generateSalt();
       user.passwordHash = hashPassword(user.password, user.salt);
       delete user.password;
-      user = collection.insertOne(user);
-      return api.get(obj._id);
+      collection.insertOne(user);
+      return api.get(user._id);
     },
 
     // Returns the user with the given email address if their password is correct. Returns null if
