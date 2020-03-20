@@ -5,14 +5,16 @@ const MongoUtil = require('./util');
 const REQUIRED_PROPERTIES_CREATE = [ 'email', 'name', 'roles', 'password' ];
 const ALLOWED_PROPERTIES_EDIT = [ '_id', 'email', 'name', 'roles', 'password' ];
 const ROLES = [ 'volunteer', 'champion', 'admin' ];
+const SECRET_PROPERTIES = [ 'salt', 'passwordHash' ];
+const SANITIZE_PROJECTION = MongoUtil.exclusionProjection(SECRET_PROPERTIES);
 
 module.exports = db => {
   const collection = db.collection('user');
 
   // Retrieves the user with the given email address.
   const findByEmail = async (email, sanitizeUser = true) => {
-    const user = await MongoUtil.findOne(collection, { email: { $eq: email } });
-    return sanitizeUser ? sanitize(user) : user;
+    const projection = sanitizeUser ? SANITIZE_PROJECTION : undefined;
+    return await MongoUtil.findOne(collection, { email: { $eq: email } }, projection);
   };
 
   const api = {
@@ -56,7 +58,7 @@ module.exports = db => {
     findByEmail: email => findByEmail(email),
 
     // Retrieves a list of all users.
-    list: () => MongoUtil.find(collection, {}, sanitize),
+    list: () => MongoUtil.find(collection, {}, SANITIZE_PROJECTION),
 
     // Updates a user record and retrieves the resulting record.
     update: async update => {
@@ -70,6 +72,12 @@ module.exports = db => {
         error400(`User does not exist: ${id.toString()}`);
       }
 
+      if (update.email && update.email !== user.email) {
+        if (await findByEmail(update.email, false)) {
+          Validate.error400(`Email address is in use by another account: ${user.email}`);
+        }
+      }
+
       if ('password' in update) {
         update.passwordHash = hashPassword(update.password, user.salt);
         delete update.password;
@@ -80,21 +88,7 @@ module.exports = db => {
     },
 
     // Deletes the given user record, or the record with the given ID
-    delete: async objOrId => {
-      let id = null;
-
-      if (typeof objOrId === 'object' && objOrId !== null && !Array.isArray(objOrId)) {
-        id = objOrId._id;
-      } else if (typeof objOrId === 'string') {
-        id = objOrId;
-      }
-
-      if (!(typeof id === 'string')) {
-        Validate.error400(`Expected object to delete or its ID; got this instead: ${objOrId}`);
-      }
-
-      await collection.deleteOne({ _id: { $eq: MongoUtil.id(id) }});
-    }
+    delete: objOrId => MongoUtil.deleteOne(collection, objOrId)
   };
   return api;
 };
@@ -135,14 +129,15 @@ const validateUpdate = update => {
   Validate.string(update, 'password');
 };
 
-// Removes any secret fields from a user object.
+// Returns a copy of the given object with the secret properties removed.
 const sanitize = user => {
   if (user === null) {
     return null;
   }
 
   const sanitized = { ...user };
-  delete sanitized.salt;
-  delete sanitized.passwordHash;
+  SECRET_PROPERTIES.forEach(key => {
+    delete sanitized[key];
+  });
   return sanitized;
 };

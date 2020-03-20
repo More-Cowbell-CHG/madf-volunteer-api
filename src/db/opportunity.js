@@ -11,6 +11,7 @@ const ALLOWED_PROPERTIES_CREATE = [
   ...REQUIRED_PROPERTIES_CREATE, 'waiver'
 ];
 const SLOT_REQUIRED_PROPERTIES = [ 'start', 'limit' ];
+const FIND_PROJECTION = { title: 1, office: 1, location: 1, status: 1, slots: 1 };
 
 /*
 {
@@ -69,6 +70,9 @@ module.exports = db => {
       obj.created = { user: userId, time: now };
       obj.lastModified = { user: userId, time: now };
       obj.status = 'pending';
+      obj.slots.forEach(slot => {
+        slot.volunteers = [];
+      });
       await collection.insertOne(obj);
       return MongoUtil.convertObjectIds(obj);
     },
@@ -77,8 +81,20 @@ module.exports = db => {
     // office: An office code
     // status: A status type (defaults to 'open'; explicitly pass 'null' to get all types)
     list: (filter = {}) => {
-      return MongoUtil.find(collection, buildQuery({ status: 'open', ...filter }));
-    }
+      return MongoUtil.find(
+        collection,
+        buildQuery({ status: 'open', ...filter }),
+        FIND_PROJECTION,
+        opportunity => {
+          opportunity.neededVolunteers = computeNeededVolunteers(opportunity.slots);
+          delete opportunity.slots;
+          return opportunity;
+        }
+      );
+    },
+
+    // Deletes the given user record, or the record with the given ID
+    delete: objOrId => MongoUtil.deleteOne(collection, objOrId)
   };
   return api;
 };
@@ -179,3 +195,10 @@ const validateSlot = slot => {
   // TODO Slot starts must be after opportunity deadline?
   Validate.number(opportunity, limit, 1);
 };
+
+// Returns the number of volunteers still needed for an opportunity.
+const computeNeededVolunteers = slots => {
+  return slots.reduce((sum, slot) => {
+    sum += slot.limit - slot.volunteers.length;
+  }, 0);
+}
